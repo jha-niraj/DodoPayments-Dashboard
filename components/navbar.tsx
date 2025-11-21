@@ -85,8 +85,8 @@ const Navbar = () => {
         <>
             <header className={cn(
                 "fixed top-0 right-0 bg-card px-4 md:px-8 py-4 z-30 transition-all duration-300",
-                "left-0 md:left-64",
-                isCollapsed && "md:left-[90px]"
+                "left-0 lg:left-64",
+                isCollapsed && "lg:left-[90px]"
             )}>
                 <div className="flex items-center justify-between h-full">
                     <div className="flex items-center gap-4">

@@ -13,8 +13,8 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
             <Sidebar />
             <div className={cn(
                 "flex flex-col flex-1 w-full transition-all duration-300",
-                "md:ml-64",
-                isCollapsed && "md:ml-[90px]"
+                "lg:ml-64",
+                isCollapsed && "lg:ml-[90px]"
             )}>
                 <Navbar />
                 <main className="flex-1 overflow-auto pt-[72px]">
