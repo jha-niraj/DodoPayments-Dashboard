@@ -1,7 +1,7 @@
 "use client";
 
 import {
-    Plus, Check, ChevronLeft, ChevronRight, CreditCard as CreditCardIcon, Wifi
+    Plus, Check, ChevronLeft, ChevronRight, Wifi
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,7 @@ import AnimatedNumber from "./AnimatedNumber";
 
 const cardsData = [
     {
-        id: 1,
-        name: "Business Card",
-        brand: "mastercard",
-        amount: 24350.50,
+        id: 1, name: "Business Card", brand: "mastercard", amount: 24350.50,
         icon: (
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 20C0 8.95431 8.95431 0 20 0C31.0457 0 40 8.95431 40 20C40 31.0457 31.0457 40 20 40C8.95431 40 0 31.0457 0 20Z" fill="#335CFF" />
@@ -34,17 +31,16 @@ const cardsData = [
                 </defs>
             </svg>
         ),
-        themeColor: "bg-blue-600",
-        textColor: "text-purple-600",
-        spendingLimit: 5000,
-        period: "month",
+        themeColor: "bg-blue-600", textColor: "text-purple-600",
+        spendingLimits: {
+            daily: 800,
+            weekly: 5000,
+            monthly: 20000
+        },
         progress: 0.45
     },
     {
-        id: 2,
-        name: "Savings Card",
-        brand: "visa",
-        amount: 16058.94,
+        id: 2, name: "Savings Card", brand: "visa", amount: 16058.94,
         icon: (
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 20C0 8.95431 8.95431 0 20 0C31.0457 0 40 8.95431 40 20C40 31.0457 31.0457 40 20 40C8.95431 40 0 31.0457 0 20Z" fill="#335CFF" />
@@ -62,17 +58,16 @@ const cardsData = [
                 </defs>
             </svg>
         ),
-        themeColor: "bg-blue-600",
-        textColor: "text-blue-600",
-        spendingLimit: 1500,
-        period: "week",
+        themeColor: "bg-blue-600", textColor: "text-blue-600",
+        spendingLimits: {
+            daily: 200,
+            weekly: 1500,
+            monthly: 6000
+        },
         progress: 0.6
     },
     {
-        id: 3,
-        name: "Premium Card",
-        brand: "rupay",
-        amount: 8725.30,
+        id: 3, name: "Premium Card", brand: "rupay", amount: 8725.30,
         icon: (
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 20C0 8.95431 8.95431 0 20 0C31.0457 0 40 8.95431 40 20C40 31.0457 31.0457 40 20 40C8.95431 40 0 31.0457 0 20Z" fill="#335CFF" />
@@ -90,19 +85,23 @@ const cardsData = [
                 </defs>
             </svg>
         ),
-        themeColor: "bg-orange-500",
-        textColor: "text-orange-500",
-        spendingLimit: 2000,
-        period: "week",
+        themeColor: "bg-orange-500", textColor: "text-orange-500",
+        spendingLimits: {
+            daily: 300,
+            weekly: 2000,
+            monthly: 8500
+        },
         progress: 0.7
     }
 ];
 
 const MyCardsSection = () => {
     const [currentCardIndex, setCurrentCardIndex] = useState(0);
-    const [currentTab, setCurrentTab] = useState('weekly');
+    const [currentTab, setCurrentTab] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
 
     const currentCard = cardsData[currentCardIndex];
+
+    const activeLimit = currentCard.spendingLimits[currentTab];
 
     const handlePrevious = () => {
         setCurrentCardIndex((prev) => (prev === 0 ? cardsData.length - 1 : prev - 1));
@@ -234,7 +233,7 @@ const MyCardsSection = () => {
                     </div>
                 </div>
             </div>
-            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+            <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as 'daily' | 'weekly' | 'monthly')} className="w-full">
                 <TabsList
                     className="
                         flex w-full rounded-xl border
@@ -296,12 +295,12 @@ const MyCardsSection = () => {
                         <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">Spending Limit</p>
                         <p className="text-lg font-bold text-gray-900">
                             <AnimatedNumber
-                                value={currentCard.spendingLimit}
+                                value={activeLimit}
                                 decimals={2}
                                 prefix="$"
                                 className="text-lg font-bold text-black dark:text-white"
                             />
-                            <span className="text-xs text-gray-800 dark:text-gray-200 font-normal ml-1">/ {currentCard.period}</span>
+                            <span className="text-xs text-gray-800 dark:text-gray-200 font-normal ml-1">/ {currentTab}</span>
                         </p>
                     </div>
                 </div>

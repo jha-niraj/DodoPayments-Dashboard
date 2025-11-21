@@ -4,6 +4,7 @@ import { SidebarProvider } from "@/components/sidebar-context";
 import { ThemeProvider } from "@/components/themeproviders";
 import { Metadata } from "next";
 import LayoutContent from "@/components/layoutcontent";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
 					<SidebarProvider>
 						<LayoutContent>
 							{children}
+							<Toaster position="top-right" />
 						</LayoutContent>
 					</SidebarProvider>
 				</ThemeProvider>

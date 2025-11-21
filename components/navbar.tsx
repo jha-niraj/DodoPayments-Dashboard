@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Search, Bell, MoveUpRight, Loader2, CheckCircle2, File, LayoutTemplate,
     Palette, Folder, Settings, CreditCard
@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { ThemeToggle } from "./ui/themetoggle";
+import { toast } from "sonner";
 
 const Navbar = () => {
     const { isCollapsed } = useSidebar();
@@ -34,9 +35,24 @@ const Navbar = () => {
     const [mmFormData, setMmFormData] = useState({ amount: "", message: "" });
     const [mmResult, setMmResult] = useState("");
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+                e.preventDefault();
+                setIsSearchOpen(true);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [isSearchOpen]);
+
     const handleMoveMoney = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!mmFormData.amount || !mmFormData.message) return;
+        if (!mmFormData.amount || !mmFormData.message) {
+            toast("Please fill in all fields");
+            return;
+        }
 
         setMmStatus("processing");
 
@@ -132,7 +148,7 @@ const Navbar = () => {
                     </div>
                 </div>
             </header>
-            <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} className="max-w-2xl mx-auto">
+            <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} className="max-w-3xl mx-auto">
                 <CommandInput placeholder="Search documentation..." />
                 <CommandList>
                     <CommandEmpty>No results found.</CommandEmpty>
@@ -220,7 +236,7 @@ const Navbar = () => {
                                     <div className="flex justify-end">
                                         <Button
                                             type="submit"
-                                            className="w-full bg-blue-800 hover:bg-blue/90 text-white text-lg h-12"
+                                            className="w-full cursor-pointer bg-blue-800 hover:bg-blue/90 text-white text-lg h-12"
                                         >
                                             Move Money <MoveUpRight className="ml-2 w-5 h-5" />
                                         </Button>

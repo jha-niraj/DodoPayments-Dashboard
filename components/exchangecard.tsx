@@ -82,12 +82,12 @@ const ExchangeCard = () => {
                 <div className="flex items-center justify-between border-b">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className="flex items-center gap-2 px-3 py-2 hover:bg-neytral-950 cursor-pointer transition-colors group outline-none">
+                            <button className="flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors group outline-none">
                                 <div className="w-5 h-5 rounded-full flex items-center justify-center text-sm overflow-hidden">
                                     {fromCurrency.flag}
                                 </div>
                                 <span className="font-semibold text-sm text-black dark:text-white">{fromCurrency.code}</span>
-                                <ChevronDown className="w-3 h-3 text-gray-200 group-hover:text-gray-400" />
+                                <ChevronDown className="rounded-full border border-gray-800 dark:border-gray-200 w-3 h-3 text-gray-800 group-hover:text-gray-400" />
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-32">
@@ -114,12 +114,12 @@ const ExchangeCard = () => {
                     <div className="h-8 w-[1px] bg-gray-200"></div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className="flex items-center gap-2 px-3 py-2 hover:bg-neytral-950 cursor-pointer rounded-lg transition-colors group outline-none">
+                            <button className="flex items-center gap-2 px-3 py-2 cursor-pointer rounded-lg transition-colors group outline-none">
                                 <div className="w-5 h-5 rounded-full flex items-center justify-center text-sm overflow-hidden">
                                     {toCurrency.flag}
                                 </div>
                                 <span className="font-semibold text-sm text-black dark:text-white">{toCurrency.code}</span>
-                                <ChevronDown className="w-3 h-3 text-gray-200 group-hover:text-gray-400" />
+                                <ChevronDown className="w-3 h-3 text-gray-800" />
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-32">
