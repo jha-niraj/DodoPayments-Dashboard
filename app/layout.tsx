@@ -1,11 +1,9 @@
-"use client";
-
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/navbar";
-import Sidebar from "@/components/sidebar";
-import { SidebarProvider, useSidebar } from "@/components/sidebar-context";
-import { cn } from "@/lib/utils";
+import { SidebarProvider } from "@/components/sidebar-context";
+import { ThemeProvider } from "@/components/themeproviders";
+import { Metadata } from "next";
+import LayoutContent from "@/components/layoutcontent";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -22,24 +20,9 @@ const geistMono = Geist_Mono({
 	subsets: ["latin"],
 });
 
-function LayoutContent({ children }: { children: React.ReactNode }) {
-	const { isCollapsed } = useSidebar();
-
-	return (
-		<div className="flex h-screen overflow-hidden">
-			<Sidebar />
-			<div className={cn(
-				"flex flex-col flex-1 w-full transition-all duration-300",
-				"md:ml-64",
-				isCollapsed && "md:ml-[90px]"
-			)}>
-				<Navbar />
-				<main className="flex-1 overflow-auto pt-[72px]">
-					{children}
-				</main>
-			</div>
-		</div>
-	);
+export const metadata: Metadata = {
+	title: "DodoPayments Dashboard",
+	description: "This is an assignment for the dodopayments dashboard"
 }
 
 export default function RootLayout({
@@ -48,13 +31,23 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning={true}>
+			<head>
+				<link rel="icon" href="/icon.svg" />
+			</head>
 			<body className={`${spaceGrotesk.className} ${geistSans.variable} ${geistMono.variable} antialiased`}>
-				<SidebarProvider>
-					<LayoutContent>
-						{children}
-					</LayoutContent>
-				</SidebarProvider>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="light"
+					enableSystem
+					disableTransitionOnChange
+				>
+					<SidebarProvider>
+						<LayoutContent>
+							{children}
+						</LayoutContent>
+					</SidebarProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	);

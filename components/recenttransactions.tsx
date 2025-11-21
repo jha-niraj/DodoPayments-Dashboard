@@ -1,80 +1,191 @@
-import { Card } from "./ui/card";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
-import { Building2, TrendingUp, Home, Package } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import {
+    Tabs, TabsList, TabsTrigger
+} from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import {
+    ChevronRight, ArrowRightLeft
+} from "lucide-react";
+import AnimatedNumber from "./AnimatedNumber";
+
+// 1. Define data for different tabs
+const transactionData = {
+    incoming: [
+        {
+            id: 1, title: "Salary Deposit", description: "Monthly salary from Apex...", amount: 3500.00, date: "Sep 18",
+            icon: (
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0 13.5H15V15H0V13.5ZM1.5 7.5H3V12.75H1.5V7.5ZM5.25 7.5H6.75V12.75H5.25V7.5ZM8.25 7.5H9.75V12.75H8.25V7.5ZM12 7.5H13.5V12.75H12V7.5ZM0 3.75L7.5 0L15 3.75V6.75H0V3.75ZM1.5 4.677V5.25H13.5V4.677L7.5 1.677L1.5 4.677ZM7.5 4.5C7.30109 4.5 7.11032 4.42098 6.96967 4.28033C6.82902 4.13968 6.75 3.94891 6.75 3.75C6.75 3.55109 6.82902 3.36032 6.96967 3.21967C7.11032 3.07902 7.30109 3 7.5 3C7.69891 3 7.88968 3.07902 8.03033 3.21967C8.17098 3.36032 8.25 3.55109 8.25 3.75C8.25 3.94891 8.17098 4.13968 8.03033 4.28033C7.88968 4.42098 7.69891 4.5 7.5 4.5Z" fill="#525866" />
+                </svg>
+            ),
+            iconBg: "bg-gray-100", iconColor: "text-gray-700"
+        },
+        {
+            id: 2, title: "Stock Dividend", description: "Payment from stock investm...", amount: 846.14, date: "Sep 18",
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4.75 3.25V15.25H16.75V16.75H3.25V3.25H4.75ZM16.2197 5.71975L17.2802 6.78025L13 11.0605L10.75 8.81125L7.53025 12.0303L6.46975 10.9698L10.75 6.6895L13 8.93875L16.2197 5.71975Z" fill="#525866" />
+                </svg>
+            ),
+            iconBg: "bg-gray-100", iconColor: "text-gray-700"
+        },
+        {
+            id: 3, title: "Rental Income", description: "Rental payment from Mr. Du...", amount: 100.00, date: "Sep 17",
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 16C16 16.1989 15.921 16.3897 15.7803 16.5303C15.6397 16.671 15.4489 16.75 15.25 16.75H4.75C4.55109 16.75 4.36032 16.671 4.21967 16.5303C4.07902 16.3897 4 16.1989 4 16V9.25H1.75L9.49525 2.209C9.63333 2.08336 9.81331 2.01373 10 2.01373C10.1867 2.01373 10.3667 2.08336 10.5048 2.209L18.25 9.25H16V16ZM6.625 10.75C6.625 11.6451 6.98058 12.5036 7.61351 13.1365C8.24645 13.7694 9.10489 14.125 10 14.125C10.8951 14.125 11.7535 13.7694 12.3865 13.1365C13.0194 12.5036 13.375 11.6451 13.375 10.75H11.875C11.875 11.2473 11.6775 11.7242 11.3258 12.0758C10.9742 12.4275 10.4973 12.625 10 12.625C9.50272 12.625 9.02581 12.4275 8.67417 12.0758C8.32254 11.7242 8.125 11.2473 8.125 10.75H6.625Z" fill="#1FC16B" />
+                </svg>
+            ),
+            iconBg: "bg-green-50", iconColor: "text-green-600"
+        },
+        {
+            id: 4, title: "Refund from Amazon", description: "Refund of Order No #124235", amount: 36.24, date: "Sep 15",
+            icon: (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M7.9334 9.57157C7.50022 10.1961 7.28363 10.9482 7.28363 11.8291H7.28101C7.28101 12.9388 7.59605 13.7973 8.22612 14.4021C8.8562 15.0069 9.66218 15.3093 10.6414 15.3093C11.2781 15.3093 11.8136 15.2462 12.2468 15.1174C12.9333 14.9254 13.633 14.4416 14.3471 13.6632C14.3983 13.7276 14.4875 13.8512 14.6162 14.0379C14.7422 14.2233 14.8341 14.3456 14.8918 14.4113C14.9483 14.4744 15.0441 14.577 15.178 14.7164C15.3119 14.857 15.4668 15.0043 15.6453 15.1568C15.8619 15.2462 16.047 15.2331 16.1992 15.1174C16.2885 15.0411 16.8608 14.5454 17.9188 13.6251C18.0212 13.5488 18.0711 13.4594 18.0711 13.3582C18.0711 13.2688 18.033 13.1662 17.9569 13.0518L17.5185 12.4681C17.4292 12.3471 17.3347 12.1499 17.2428 11.8738C17.1457 11.6016 17.0984 11.2992 17.0984 10.9666V6.33849C17.0984 6.28853 17.0932 6.1255 17.08 5.85202C17.0669 5.57854 17.0485 5.39842 17.0223 5.31558C16.9987 5.23275 16.9593 5.08287 16.9068 4.86855C16.8569 4.6503 16.8018 4.48463 16.7361 4.36893C16.6744 4.25323 16.5865 4.12438 16.4775 3.97712C16.3686 3.83118 16.2518 3.69313 16.1257 3.56559C15.3093 2.81353 14.1764 2.4375 12.7259 2.4375H12.2494C11.1179 2.50061 10.1269 2.80696 9.28019 3.35523C8.43484 3.9035 7.90321 4.74496 7.68662 5.87963C7.67349 5.93091 7.66693 5.9743 7.66693 6.01374C7.66693 6.19255 7.77588 6.30694 7.99116 6.35953L10.1872 6.62775C10.3907 6.58962 10.518 6.44236 10.5705 6.18729C10.6585 5.77971 10.8554 5.46021 11.1612 5.23012C11.4671 4.99872 11.8307 4.86724 12.2508 4.8278H12.3991C12.9727 4.8278 13.3928 5.01976 13.6592 5.40368C13.8365 5.68241 13.9283 6.232 13.9283 7.04717V7.37192C13.1512 7.43503 12.5894 7.485 12.2481 7.52444C11.2426 7.65197 10.396 7.86234 9.70943 8.15554C8.95728 8.47504 8.36658 8.94705 7.9334 9.57157ZM10.9394 12.6416C10.6913 12.3392 10.5679 11.9421 10.5679 11.4452L10.5666 11.4465C10.5666 10.3499 11.1258 9.64257 12.2468 9.32439C12.6275 9.22315 13.188 9.17056 13.927 9.17056V9.64783C13.927 10.0554 13.9244 10.3499 13.9178 10.5287C13.9113 10.7076 13.8732 10.9403 13.8036 11.2256C13.7327 11.5122 13.6277 11.7765 13.4886 12.0197C13.1959 12.568 12.7811 12.9112 12.2481 13.0518C12.2219 13.0518 12.1733 13.0584 12.1037 13.0716C12.0328 13.0834 11.9803 13.0886 11.941 13.0886C11.5209 13.0886 11.1888 12.9401 10.9394 12.6416Z" fill="#353E47" />
+                    <path d="M18.6998 17.45C18.6512 17.5013 18.6118 17.5513 18.5856 17.6039V17.6065C18.5725 17.6315 18.5672 17.6499 18.5672 17.663C18.5541 17.6893 18.5593 17.713 18.5856 17.7393C18.6118 17.7656 18.6604 17.7787 18.7392 17.7787C19.0056 17.7406 19.2984 17.7038 19.6187 17.6644C19.9101 17.6381 20.1647 17.6249 20.38 17.6249C20.9668 17.6249 21.3225 17.7025 21.4498 17.8537C21.4997 17.9168 21.526 18.0194 21.526 18.16C21.526 18.5939 21.2923 19.3644 20.8197 20.4741C20.7817 20.5753 20.7987 20.645 20.8775 20.6844C20.9011 20.6963 20.9274 20.7028 20.9536 20.7028C21.0048 20.7028 21.0613 20.6792 21.1269 20.6266C21.5575 20.2571 21.8948 19.768 22.1377 19.1632C22.3792 18.5584 22.5 18.0325 22.5 17.5855V17.4514C22.5 17.2988 22.4763 17.1845 22.4238 17.1095C22.3109 16.9675 21.9657 16.8729 21.3921 16.8203C21.2792 16.7953 21.1571 16.7874 21.0298 16.8005C20.5716 16.8137 20.1004 16.8847 19.6187 17.0109C19.3246 17.0872 19.0188 17.2344 18.6998 17.45Z" fill="#FF9900" />
+                    <path d="M1.84392 17.2593C1.70346 17.1699 1.60239 17.1765 1.53938 17.2791C1.51313 17.3172 1.5 17.354 1.5 17.3934C1.5 17.4566 1.53938 17.5223 1.61683 17.5841C3.01744 18.8463 4.60051 19.8258 6.37261 20.52C8.14077 21.2142 10.0179 21.5627 12.0039 21.5627C13.2903 21.5627 14.6069 21.3825 15.9551 21.0275C17.3045 20.6699 18.5266 20.1663 19.62 19.5155C19.9771 19.2999 20.2698 19.1079 20.4995 18.9423C20.6767 18.8147 20.7122 18.6741 20.6045 18.5215C20.4956 18.3677 20.3459 18.3309 20.1543 18.4071C20.1084 18.4295 20.0353 18.4614 19.9338 18.5055L19.897 18.5215L19.6213 18.6359C17.189 19.5668 14.7251 20.0335 12.231 20.0335C8.48862 20.0335 5.02582 19.1079 1.84392 17.2593Z" fill="#FF9900" />
+                </svg>
+            ),
+            iconBg: "bg-gray-100", iconColor: "text-gray-700"
+        },
+    ],
+    outgoing: [
+        {
+            id: 5, title: "Starbucks", description: "Morning coffee run", amount: 12.50, date: "Sep 18",
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 16C16 16.1989 15.921 16.3897 15.7803 16.5303C15.6397 16.671 15.4489 16.75 15.25 16.75H4.75C4.55109 16.75 4.36032 16.671 4.21967 16.5303C4.07902 16.3897 4 16.1989 4 16V9.25H1.75L9.49525 2.209C9.63333 2.08336 9.81331 2.01373 10 2.01373C10.1867 2.01373 10.3667 2.08336 10.5048 2.209L18.25 9.25H16V16ZM6.625 10.75C6.625 11.6451 6.98058 12.5036 7.61351 13.1365C8.24645 13.7694 9.10489 14.125 10 14.125C10.8951 14.125 11.7535 13.7694 12.3865 13.1365C13.0194 12.5036 13.375 11.6451 13.375 10.75H11.875C11.875 11.2473 11.6775 11.7242 11.3258 12.0758C10.9742 12.4275 10.4973 12.625 10 12.625C9.50272 12.625 9.02581 12.4275 8.67417 12.0758C8.32254 11.7242 8.125 11.2473 8.125 10.75H6.625Z" fill="#1FC16B" />
+                </svg>
+            ),
+            iconBg: "bg-orange-50", iconColor: "text-orange-600"
+        },
+        {
+            id: 6, title: "Electric Bill", description: "Monthly utility payment", amount: 145.20, date: "Sep 16",
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 16C16 16.1989 15.921 16.3897 15.7803 16.5303C15.6397 16.671 15.4489 16.75 15.25 16.75H4.75C4.55109 16.75 4.36032 16.671 4.21967 16.5303C4.07902 16.3897 4 16.1989 4 16V9.25H1.75L9.49525 2.209C9.63333 2.08336 9.81331 2.01373 10 2.01373C10.1867 2.01373 10.3667 2.08336 10.5048 2.209L18.25 9.25H16V16ZM6.625 10.75C6.625 11.6451 6.98058 12.5036 7.61351 13.1365C8.24645 13.7694 9.10489 14.125 10 14.125C10.8951 14.125 11.7535 13.7694 12.3865 13.1365C13.0194 12.5036 13.375 11.6451 13.375 10.75H11.875C11.875 11.2473 11.6775 11.7242 11.3258 12.0758C10.9742 12.4275 10.4973 12.625 10 12.625C9.50272 12.625 9.02581 12.4275 8.67417 12.0758C8.32254 11.7242 8.125 11.2473 8.125 10.75H6.625Z" fill="#1FC16B" />
+                </svg>
+            ),
+            iconBg: "bg-yellow-50", iconColor: "text-yellow-600"
+        },
+        {
+            id: 7, title: "Uber Ride", description: "Trip to airport", amount: 45.00, date: "Sep 15",
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 16C16 16.1989 15.921 16.3897 15.7803 16.5303C15.6397 16.671 15.4489 16.75 15.25 16.75H4.75C4.55109 16.75 4.36032 16.671 4.21967 16.5303C4.07902 16.3897 4 16.1989 4 16V9.25H1.75L9.49525 2.209C9.63333 2.08336 9.81331 2.01373 10 2.01373C10.1867 2.01373 10.3667 2.08336 10.5048 2.209L18.25 9.25H16V16ZM6.625 10.75C6.625 11.6451 6.98058 12.5036 7.61351 13.1365C8.24645 13.7694 9.10489 14.125 10 14.125C10.8951 14.125 11.7535 13.7694 12.3865 13.1365C13.0194 12.5036 13.375 11.6451 13.375 10.75H11.875C11.875 11.2473 11.6775 11.7242 11.3258 12.0758C10.9742 12.4275 10.4973 12.625 10 12.625C9.50272 12.625 9.02581 12.4275 8.67417 12.0758C8.32254 11.7242 8.125 11.2473 8.125 10.75H6.625Z" fill="#1FC16B" />
+                </svg>
+            ), iconBg: "bg-black/5", iconColor: "text-black"
+        },
+    ],
+    pending: [
+        {
+            id: 8, title: "Freelance Payment", description: "Pending clearance from Upwork", amount: 450.00, date: "Est. Sep 20",
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 16C16 16.1989 15.921 16.3897 15.7803 16.5303C15.6397 16.671 15.4489 16.75 15.25 16.75H4.75C4.55109 16.75 4.36032 16.671 4.21967 16.5303C4.07902 16.3897 4 16.1989 4 16V9.25H1.75L9.49525 2.209C9.63333 2.08336 9.81331 2.01373 10 2.01373C10.1867 2.01373 10.3667 2.08336 10.5048 2.209L18.25 9.25H16V16ZM6.625 10.75C6.625 11.6451 6.98058 12.5036 7.61351 13.1365C8.24645 13.7694 9.10489 14.125 10 14.125C10.8951 14.125 11.7535 13.7694 12.3865 13.1365C13.0194 12.5036 13.375 11.6451 13.375 10.75H11.875C11.875 11.2473 11.6775 11.7242 11.3258 12.0758C10.9742 12.4275 10.4973 12.625 10 12.625C9.50272 12.625 9.02581 12.4275 8.67417 12.0758C8.32254 11.7242 8.125 11.2473 8.125 10.75H6.625Z" fill="#1FC16B" />
+                </svg>
+            ), iconBg: "bg-blue-50", iconColor: "text-blue-600"
+        },
+        {
+            id: 9, title: "Bank Transfer", description: "Transfer to Savings", amount: 1000.00, date: "Processing",
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 16C16 16.1989 15.921 16.3897 15.7803 16.5303C15.6397 16.671 15.4489 16.75 15.25 16.75H4.75C4.55109 16.75 4.36032 16.671 4.21967 16.5303C4.07902 16.3897 4 16.1989 4 16V9.25H1.75L9.49525 2.209C9.63333 2.08336 9.81331 2.01373 10 2.01373C10.1867 2.01373 10.3667 2.08336 10.5048 2.209L18.25 9.25H16V16ZM6.625 10.75C6.625 11.6451 6.98058 12.5036 7.61351 13.1365C8.24645 13.7694 9.10489 14.125 10 14.125C10.8951 14.125 11.7535 13.7694 12.3865 13.1365C13.0194 12.5036 13.375 11.6451 13.375 10.75H11.875C11.875 11.2473 11.6775 11.7242 11.3258 12.0758C10.9742 12.4275 10.4973 12.625 10 12.625C9.50272 12.625 9.02581 12.4275 8.67417 12.0758C8.32254 11.7242 8.125 11.2473 8.125 10.75H6.625Z" fill="#1FC16B" />
+                </svg>
+            ), iconBg: "bg-purple-50", iconColor: "text-purple-600"
+        },
+    ]
+};
 
 const RecentTransactionsSection = () => {
-    const transactions = [
-        {
-            id: 1,
-            title: "Salary Deposit",
-            description: "Monthly salary from Apex...",
-            amount: "$3,500.00",
-            date: "Sep 18",
-            icon: Building2,
-            iconBg: "bg-secondary"
-        },
-        {
-            id: 2,
-            title: "Stock Dividend",
-            description: "Payment from stock investm...",
-            amount: "$846.14",
-            date: "Sep 18",
-            icon: TrendingUp,
-            iconBg: "bg-blue-100"
-        },
-        {
-            id: 3,
-            title: "Rental Income",
-            description: "Rental payment from Mr. Du...",
-            amount: "$100.00",
-            date: "Sep 17",
-            icon: Home,
-            iconBg: "bg-green-100"
-        },
-        {
-            id: 4,
-            title: "Refund from Amazon",
-            description: "Refund of Order No #124235",
-            amount: "$36.24",
-            date: "Sep 15",
-            icon: Package,
-            iconBg: "bg-orange-100"
-        },
-    ];
+    const [activeTab, setActiveTab] = useState("incoming");
+    const currentTransactions = transactionData[activeTab as keyof typeof transactionData];
 
     return (
-        <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Recent Transactions</h2>
-                <button className="text-sm text-primary hover:underline">See All</button>
+        <Card className="p-4 w-full max-w-lg mx-auto h-auto bg-white dark:bg-neutral-950 border border-gray-200 dark:border-neutral-700 shadow-sm">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-gray-100 rounded-full">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.52632 2.1669C7.29674 -0.923351 12.8689 -0.70831 16.3887 2.81202C20.1371 6.56084 20.1371 12.6396 16.3887 16.3884C12.6404 20.1372 6.56243 20.1372 2.81409 16.3884C1.66379 15.2395 0.824323 13.8171 0.374507 12.2547C-0.0753089 10.6923 -0.120712 9.04126 0.242562 7.45652L0.316473 7.15604L2.17289 7.64564C1.71266 9.39502 1.88463 11.2507 2.65847 12.8857C3.43231 14.5207 4.75836 15.83 6.40293 16.583C8.04749 17.3359 9.90501 17.4841 11.6481 17.0014C13.3912 16.5188 14.9081 15.4362 15.9313 13.9446C16.9545 12.453 17.4185 10.648 17.2414 8.84781C17.0642 7.04759 16.2575 5.36766 14.9632 4.10409C13.6689 2.84053 11.9702 2.07442 10.1665 1.94079C8.36273 1.80715 6.56971 2.31458 5.10341 3.37362L4.89127 3.53299L5.86747 4.50931L1.45585 5.52691L2.47333 1.11474L3.52536 2.1669H3.52632ZM10.5613 3.84019V5.76019H12.961V7.6802H7.68165C7.56172 7.67998 7.44605 7.72468 7.35742 7.80549C7.26879 7.8863 7.21363 7.99737 7.20279 8.11683C7.19195 8.23629 7.22623 8.35548 7.29887 8.45092C7.37151 8.54637 7.47725 8.61115 7.59526 8.63252L7.68165 8.6402H11.5212C12.1576 8.6402 12.768 8.89306 13.218 9.34315C13.6681 9.79324 13.9209 10.4037 13.9209 11.0402C13.9209 11.6767 13.6681 12.2872 13.218 12.7373C12.768 13.1874 12.1576 13.4402 11.5212 13.4402H10.5613V15.3602H8.64153V13.4402H6.24183V11.5202H11.5212C11.6411 11.5204 11.7568 11.4757 11.8454 11.3949C11.934 11.3141 11.9892 11.203 12 11.0836C12.0109 10.9641 11.9766 10.8449 11.904 10.7495C11.8313 10.654 11.7256 10.5893 11.6076 10.5679L11.5212 10.5602H7.68165C7.04521 10.5602 6.43483 10.3074 5.9848 9.85726C5.53477 9.40718 5.28194 8.79672 5.28194 8.1602C5.28194 7.52368 5.53477 6.91323 5.9848 6.46314C6.43483 6.01305 7.04521 5.76019 7.68165 5.76019H8.64153V3.84019H10.5613Z" fill="#525866" />
+                        </svg>
+                    </div>
+                    <h2 className="text-base font-semibold text-black dark:text-white">Recent Transactions</h2>
+                </div>
+                <Button variant="outline" size="sm" className="cursor-pointer text-xs font-medium h-8 border-gray-200 text-gray-800 dark:text-gray-200 hover:text-gray-900 hover:bg-gray-50 shadow-sm">
+                    See All
+                </Button>
             </div>
+            <Tabs defaultValue="incoming" onValueChange={setActiveTab} className="w-full">
+                <TabsList
+                    className="
+                        flex w-full rounded-xl border
+                        bg-white dark:bg-neutral-900
+                        border-gray-200 dark:border-neutral-700
+                        overflow-hidden
+                    "
+                >
+                    {
+                        ["incoming", "outgoing", "pending"].map((tab) => (
+                            <TabsTrigger
+                                key={tab}
+                                value={tab}
+                                className="
+                                    flex-1 py-3 text-center text-sm font-semibold
+                                    text-gray-600 dark:text-gray-300
+                                    transition-colors shadow-none cursor-pointer
+                                    
+                                    data-[state=active]:bg-gray-200 dark:data-[state=active]:bg-neutral-700
+                                    data-[state=active]:text-gray-900 dark:data-[state=active]:text-white
 
-            <Tabs defaultValue="incoming" className="mb-4">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="incoming">Incoming</TabsTrigger>
-                    <TabsTrigger value="outgoing">Outgoing</TabsTrigger>
-                    <TabsTrigger value="pending">Pending</TabsTrigger>
+                                    hover:bg-gray-100 dark:hover:bg-neutral-800
+                                "
+                            >
+                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            </TabsTrigger>
+                        ))
+                    }
                 </TabsList>
             </Tabs>
-
-            <div className="space-y-3">
-                {transactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between py-2 hover:bg-secondary/50 rounded-lg px-2 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg ${transaction.iconBg} flex items-center justify-center`}>
-                                <transaction.icon className="w-5 h-5 text-foreground" />
+            <div className="space-y-1">
+                <div key={activeTab} className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out space-y-8">
+                    {
+                        currentTransactions.map((transaction) => (
+                            <div
+                                key={transaction.id}
+                                className="flex items-center justify-between group cursor-pointer"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-full ${transaction.iconBg} flex items-center justify-center flex-shrink-0 border border-black/5`}>
+                                        {transaction.icon}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-black dark:text-white leading-none mb-1.5">{transaction.title}</p>
+                                        <p className="text-xs text-gray-800 dark:text-gray-200 font-medium truncate max-w-[140px]">{transaction.description}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                        <p className="text-sm font-bold text-black dark:text-white">
+                                            <AnimatedNumber
+                                                value={transaction.amount}
+                                                decimals={2}
+                                                prefix="$"
+                                                className="text-sm font-bold"
+                                            />
+                                        </p>
+                                        <p className="text-xs text-gray-800 dark:text-gray-200 font-medium mt-0.5">{transaction.date}</p>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-300 group-hover:text-gray-500 transition-colors" />
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-sm font-medium">{transaction.title}</p>
-                                <p className="text-xs text-muted-foreground">{transaction.description}</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-sm font-semibold">{transaction.amount}</p>
-                            <p className="text-xs text-muted-foreground">{transaction.date}</p>
-                        </div>
-                    </div>
-                ))}
+                        ))
+                    }
+                </div>
             </div>
         </Card>
     );
