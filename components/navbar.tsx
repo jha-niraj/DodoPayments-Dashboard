@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import {
     Search, Bell, MoveUpRight, Loader2, CheckCircle2, File, LayoutTemplate,
-    Palette, Folder, Settings, CreditCard
+    Palette, Folder, Settings, CreditCard, Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useSidebar } from "./sidebar-context"; // Assuming this path is correct based on your snippet
+import { useSidebar } from "./sidebar-context";
 import { cn } from "@/lib/utils";
 import {
     CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem,
@@ -24,9 +24,11 @@ import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { ThemeToggle } from "./ui/themetoggle";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
     const { isCollapsed } = useSidebar();
+    const router = useRouter();
 
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -144,6 +146,15 @@ const Navbar = () => {
                             <span className="hidden md:inline mr-2">Move Money</span>
                             <span className="md:hidden mr-2">Pay</span>
                             <MoveUpRight className="w-4 h-4" />
+                        </Button>
+                        <Button
+                            onClick={() => router.push('/queuedemo')}
+                            className="bg-blue-800 cursor-pointer text-white hover:bg-blue/90 transition-colors shadow-lg shadow-blue-900/20"
+                            size="lg"
+                        >
+                            <span className="hidden md:inline mr-2">Queue Demo</span>
+                            <span className="md:hidden mr-2">Demo</span>
+                            <Radio className="w-4 h-4" />
                         </Button>
                     </div>
                 </div>
