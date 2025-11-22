@@ -27,12 +27,15 @@ type QueueJob = {
     response?: any;
     error?: string;
     timestamp: number;
+    rateLimitRemaining?: number;
 };
 
 class APIQueue {
     private queue: QueueJob[] = [];
     private processing = false;
     private listeners: Set<() => void> = new Set();
+    private currentRateLimitRemaining: number = 5;
+    private rateLimitResetTime: number | null = null;
 
     addJob(message: string): string {
         const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -75,8 +78,21 @@ class APIQueue {
                 );
 
                 const data = response.data;
-                console.log('Response status:', response.status);
-                console.log('Response data:', data);
+
+                // ✅ Extract rate limit info from headers
+                const rateLimitRemaining = response.headers['x-ratelimit-remaining'];
+                if (rateLimitRemaining !== undefined) {
+                    this.currentRateLimitRemaining = parseInt(rateLimitRemaining);
+                    job.rateLimitRemaining = this.currentRateLimitRemaining;
+
+                    // Set reset time to 1 minute from now if we just made a request
+                    if (this.rateLimitResetTime === null) {
+                        this.rateLimitResetTime = Date.now() + 60000;
+                    }
+                }
+
+                console.log('Rate limit remaining:', this.currentRateLimitRemaining);
+
 
                 // ✅ Check the response data status
                 if (data.status === "ok") {
@@ -91,13 +107,17 @@ class APIQueue {
 
                 this.notifyListeners();
             } catch (error: any) {
-                // ✅ Handle rate limiting (429) and other errors here
                 if (error.response?.status === 429) {
                     console.log('Rate limited! Putting job back in queue...');
+
+                    // ✅ Set rate limit to 0 when we hit the limit
+                    this.currentRateLimitRemaining = 0;
+                    this.rateLimitResetTime = Date.now() + 60000; // Reset in 60 seconds
+
                     job.status = 'pending';
                     this.notifyListeners();
                     await new Promise(resolve => setTimeout(resolve, 3000));
-                    continue; // Skip to next iteration, will retry this job
+                    continue;
                 }
 
                 // Other errors
@@ -122,7 +142,7 @@ class APIQueue {
     }
 
     private notifyListeners() {
-        console.log('🔔 Notifying listeners, queue state:', this.queue.map(j => ({ id: j.id.slice(0, 8), status: j.status })));
+        console.log('Notifying listeners, queue state:', this.queue.map(j => ({ id: j.id.slice(0, 8), status: j.status })));
         this.listeners.forEach(listener => listener());
     }
 
@@ -136,6 +156,13 @@ class APIQueue {
             success: this.queue.filter(j => j.status === 'success').length,
             error: this.queue.filter(j => j.status === 'error').length,
             total: this.queue.length
+        };
+    }
+
+    getRateLimitInfo() {
+        return {
+            remaining: this.currentRateLimitRemaining,
+            resetTime: this.rateLimitResetTime
         };
     }
 
@@ -163,6 +190,7 @@ export default function QueueDemoPage() {
     const [, forceUpdate] = useState({});
     const [messageInput, setMessageInput] = useState('');
     const [autoSendCount, setAutoSendCount] = useState(5);
+    const [timeUntilReset, setTimeUntilReset] = useState<number | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -170,6 +198,24 @@ export default function QueueDemoPage() {
             forceUpdate({});
         });
         return unsubscribe;
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const rateLimitInfo = apiQueue.getRateLimitInfo();
+            if (rateLimitInfo.resetTime) {
+                const timeLeft = Math.max(0, rateLimitInfo.resetTime - Date.now());
+                setTimeUntilReset(timeLeft);
+
+                if (timeLeft === 0) {
+                    setTimeUntilReset(null);
+                }
+            } else {
+                setTimeUntilReset(null);
+            }
+        }, 100);
+
+        return () => clearInterval(interval);
     }, []);
 
     const queue = apiQueue.getQueue();
@@ -181,6 +227,7 @@ export default function QueueDemoPage() {
 
     const counts = apiQueue.getCounts();
     const isProcessing = apiQueue.isProcessing();
+    const rateLimitInfo = apiQueue.getRateLimitInfo();
 
     const handleSendMessage = () => {
         const message = messageInput || `Task #${queue.length + 1}`;
@@ -209,6 +256,11 @@ export default function QueueDemoPage() {
             default:
                 return <Badge variant="outline">Unknown</Badge>;
         }
+    };
+
+    const formatTimeRemaining = (ms: number) => {
+        const seconds = Math.ceil(ms / 1000);
+        return `${seconds}s`;
     };
 
     return (
@@ -241,6 +293,78 @@ export default function QueueDemoPage() {
                     </Button>
                 </div>
             </div>
+            {
+                rateLimitInfo.remaining !== null && (
+                    <Alert className={cn(
+                        "transition-all duration-300",
+                        rateLimitInfo.remaining === 0
+                            ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900"
+                            : rateLimitInfo.remaining <= 2
+                                ? "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-900"
+                                : "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900"
+                    )}>
+                        <Server className={cn(
+                            "h-4 w-4",
+                            rateLimitInfo.remaining === 0
+                                ? "text-red-600 dark:text-red-400"
+                                : rateLimitInfo.remaining <= 2
+                                    ? "text-yellow-600 dark:text-yellow-400"
+                                    : "text-blue-600 dark:text-blue-400"
+                        )} />
+                        <AlertTitle className={cn(
+                            rateLimitInfo.remaining === 0
+                                ? "text-red-800 dark:text-red-300"
+                                : rateLimitInfo.remaining <= 2
+                                    ? "text-yellow-800 dark:text-yellow-300"
+                                    : "text-blue-800 dark:text-blue-300"
+                        )}>
+                            Rate Limit Status
+                        </AlertTitle>
+                        <AlertDescription className={cn(
+                            "mt-2 text-sm",
+                            rateLimitInfo.remaining === 0
+                                ? "text-red-700 dark:text-red-400"
+                                : rateLimitInfo.remaining <= 2
+                                    ? "text-yellow-700 dark:text-yellow-400"
+                                    : "text-blue-700 dark:text-blue-400"
+                        )}>
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                                <div className="flex items-center gap-6">
+                                    <div>
+                                        <span className="font-semibold text-lg">
+                                            {rateLimitInfo.remaining} / 5
+                                        </span>
+                                        <span className="ml-2">requests remaining</span>
+                                    </div>
+                                    {
+                                        timeUntilReset !== null && timeUntilReset > 0 && (
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="w-4 h-4" />
+                                                <span>Resets in <span className="font-mono font-semibold">{formatTimeRemaining(timeUntilReset)}</span></span>
+                                            </div>
+                                        )
+                                    }
+                                </div>
+                                <div className="flex-1 min-w-[200px]">
+                                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                        <div
+                                            className={cn(
+                                                "h-2 rounded-full transition-all duration-300",
+                                                rateLimitInfo.remaining === 0
+                                                    ? "bg-red-500"
+                                                    : rateLimitInfo.remaining <= 2
+                                                        ? "bg-yellow-500"
+                                                        : "bg-blue-500"
+                                            )}
+                                            style={{ width: `${(rateLimitInfo.remaining / 5) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </AlertDescription>
+                    </Alert>
+                )
+            }
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card className="bg-card/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -406,6 +530,14 @@ export default function QueueDemoPage() {
                                                             <div className="mt-3 p-2 bg-red-500/5 rounded text-xs font-mono text-red-700 dark:text-red-400 border border-red-500/10">
                                                                 {`> Error: ${job.error}`}
                                                             </div>
+                                                        )
+                                                    }
+
+                                                    {
+                                                        job.rateLimitRemaining !== undefined && (
+                                                            <span className="text-[10px] text-muted-foreground font-mono">
+                                                                Rate limit: {job.rateLimitRemaining}/5
+                                                            </span>
                                                         )
                                                     }
                                                 </div>
