@@ -2,21 +2,23 @@
 
 import { useState, useEffect, useRef } from 'react';
 import {
-    Play, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle2, Clock, XCircle, 
+    Play, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle2, Clock, XCircle,
     Loader2, Zap, Server
 } from "lucide-react";
-import { 
+import {
     Card, CardContent, CardDescription, CardHeader, CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-    Alert, AlertDescription, AlertTitle 
+import {
+    Alert, AlertDescription, AlertTitle
 } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { toast } from 'sonner';
+import axios from 'axios';
 
 type QueueJob = {
     id: string;
@@ -67,34 +69,43 @@ class APIQueue {
             this.notifyListeners();
 
             try {
-                // Simulate API call with 2 second delay
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                const response = await axios.post('/api/movemoney',
+                    { message: job.message },
+                    { headers: { 'Content-Type': 'application/json' } }
+                );
 
-                // Simulate rate limiting (every 5th request gets rate limited roughly)
-                const shouldRateLimit = Math.random() < 0.2;
+                const data = response.data;
+                console.log('Response status:', response.status);
+                console.log('Response data:', data);
 
-                if (shouldRateLimit) {
-                    console.log('Rate limited! Putting job back in queue...');
-                    // We keep status processing but maybe add a note or handle retry logic
-                    // For visual simplicity, we'll push it back to pending
-                    job.status = 'pending';
-                    this.notifyListeners();
-                    // Wait penalty
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    continue;
+                // ✅ Check the response data status
+                if (data.status === "ok") {
+                    job.status = 'success';
+                    job.response = data;
+                    console.log('Job succeeded:', data);
+                } else {
+                    job.status = 'error';
+                    job.response = data;
+                    job.error = data.echo || 'Request failed';
                 }
 
-                // Simulate successful response
-                job.status = 'success';
-                job.response = {
-                    status: 'ok',
-                    echo: job.message,
-                    processedAt: new Date().toISOString()
-                };
+                this.notifyListeners();
+            } catch (error: any) {
+                // ✅ Handle rate limiting (429) and other errors here
+                if (error.response?.status === 429) {
+                    console.log('Rate limited! Putting job back in queue...');
+                    job.status = 'pending';
+                    this.notifyListeners();
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    continue; // Skip to next iteration, will retry this job
+                }
 
-            } catch (error) {
+                // Other errors
                 job.status = 'error';
-                job.error = error instanceof Error ? error.message : 'Unknown error';
+                job.error = error.response?.data?.echo || error.message || 'Unknown error';
+                console.error('Job failed:', error);
+
+                this.notifyListeners();
             }
 
             this.notifyListeners();
@@ -111,11 +122,12 @@ class APIQueue {
     }
 
     private notifyListeners() {
+        console.log('🔔 Notifying listeners, queue state:', this.queue.map(j => ({ id: j.id.slice(0, 8), status: j.status })));
         this.listeners.forEach(listener => listener());
     }
 
     getQueue(): QueueJob[] {
-        return [...this.queue]; // Return copy
+        return [...this.queue];
     }
 
     getCounts() {
@@ -145,10 +157,7 @@ class APIQueue {
     }
 }
 
-// Singleton
 const apiQueue = new APIQueue();
-
-// --- Main Component ---
 
 export default function QueueDemoPage() {
     const [, forceUpdate] = useState({});
@@ -156,7 +165,6 @@ export default function QueueDemoPage() {
     const [autoSendCount, setAutoSendCount] = useState(5);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Subscribe to queue changes
     useEffect(() => {
         const unsubscribe = apiQueue.subscribe(() => {
             forceUpdate({});
@@ -164,7 +172,6 @@ export default function QueueDemoPage() {
         return unsubscribe;
     }, []);
 
-    // Auto-scroll to bottom of list when queue length increases
     const queue = apiQueue.getQueue();
     useEffect(() => {
         if (scrollRef.current) {
@@ -189,7 +196,6 @@ export default function QueueDemoPage() {
         }
     };
 
-    // Helper for status visuals
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'pending':
@@ -219,6 +225,7 @@ export default function QueueDemoPage() {
                         variant="outline"
                         onClick={() => apiQueue.clearCompleted()}
                         disabled={counts.success === 0 && counts.error === 0}
+                        className="cursor-pointer"
                     >
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Cleanup
@@ -227,14 +234,13 @@ export default function QueueDemoPage() {
                         variant="destructive"
                         onClick={() => apiQueue.clearAll()}
                         disabled={queue.length === 0}
+                        className="cursor-pointer"
                     >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Clear All
                     </Button>
                 </div>
             </div>
-
-            {/* Stats Overview */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card className="bg-card/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -273,9 +279,7 @@ export default function QueueDemoPage() {
                     </CardContent>
                 </Card>
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-                {/* Left Column: Controls */}
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
@@ -295,7 +299,10 @@ export default function QueueDemoPage() {
                                         onChange={(e) => setMessageInput(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                                     />
-                                    <Button onClick={handleSendMessage}>
+                                    <Button
+                                        onClick={handleSendMessage}
+                                        className="cursor-pointer"
+                                    >
                                         <Plus className="w-4 h-4" />
                                     </Button>
                                 </div>
@@ -313,7 +320,7 @@ export default function QueueDemoPage() {
                                         value={autoSendCount}
                                         onChange={(e) => setAutoSendCount(Number(e.target.value))}
                                     />
-                                    <Button variant="secondary" onClick={handleAutoSend} className="whitespace-nowrap">
+                                    <Button variant="secondary" onClick={handleAutoSend} className="cursor-pointer whitespace-nowrap">
                                         <Play className="w-4 h-4 mr-2" />
                                         Run Batch
                                     </Button>
@@ -321,7 +328,6 @@ export default function QueueDemoPage() {
                             </div>
                         </CardContent>
                     </Card>
-
                     <Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900">
                         <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         <AlertTitle className="text-blue-800 dark:text-blue-300">How it works</AlertTitle>
@@ -331,79 +337,84 @@ export default function QueueDemoPage() {
                         </AlertDescription>
                     </Alert>
                 </div>
-
-                {/* Right Column: The Queue */}
                 <Card className="lg:col-span-2 flex flex-col h-[600px]">
-                    <CardHeader className="pb-3 border-b">
+                    <CardHeader className="border-b">
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle>Job Feed</CardTitle>
                                 <CardDescription>Live stream of worker activity</CardDescription>
                             </div>
-                            {isProcessing && (
-                                <Badge variant="secondary" className="animate-pulse">
-                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                    Worker Active
-                                </Badge>
-                            )}
+                            {
+                                isProcessing && (
+                                    <Badge variant="secondary" className="animate-pulse">
+                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                        Worker Active
+                                    </Badge>
+                                )
+                            }
                         </div>
                     </CardHeader>
-
                     <CardContent className="flex-1 p-0 relative">
                         <ScrollArea className="h-[500px] w-full p-4">
-                            {queue.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                                    <Server className="w-12 h-12 mb-4 opacity-20" />
-                                    <p>Queue is empty</p>
-                                    <p className="text-sm">Start adding tasks to see them here.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {queue.map((job, index) => (
-                                        <div
-                                            key={job.id}
-                                            className={cn(
-                                                "border rounded-lg p-4 transition-all duration-300",
-                                                job.status === 'processing'
-                                                    ? "bg-secondary/50 border-blue-500/50 shadow-md scale-[1.01]"
-                                                    : "bg-card hover:bg-secondary/20"
-                                            )}
-                                        >
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-mono text-muted-foreground">#{index + 1}</span>
-                                                    <h4 className="font-semibold text-sm">{job.message}</h4>
+                            {
+                                queue.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                                        <Server className="w-12 h-12 mb-4 opacity-20" />
+                                        <p>Queue is empty</p>
+                                        <p className="text-sm">Start adding tasks to see them here.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {
+                                            queue.map((job, index) => (
+                                                <div
+                                                    key={job.id}
+                                                    className={cn(
+                                                        "border rounded-lg p-4 transition-all duration-300",
+                                                        job.status === 'processing'
+                                                            ? "bg-secondary/50 border-blue-500/50 shadow-md scale-[1.01]"
+                                                            : "bg-card hover:bg-secondary/20"
+                                                    )}
+                                                >
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-mono text-muted-foreground">#{index + 1}</span>
+                                                            <h4 className="font-semibold text-sm">{job.message}</h4>
+                                                        </div>
+                                                        <span className="text-[10px] text-muted-foreground font-mono">
+                                                            {new Date(job.timestamp).toLocaleTimeString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        {getStatusBadge(job.status)}
+
+                                                        <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[100px]">
+                                                            ID: {job.id}
+                                                        </span>
+                                                    </div>
+
+                                                    {
+                                                        job.status === 'success' && job.response && (
+                                                            <div className="mt-3 p-2 bg-green-500/5 rounded text-xs font-mono text-green-700 dark:text-green-400 border border-green-500/10">
+                                                                {`> Response: ${JSON.stringify(job.response.echo)}`}
+                                                            </div>
+                                                        )
+                                                    }
+
+                                                    {
+                                                        job.status === 'error' && (
+                                                            <div className="mt-3 p-2 bg-red-500/5 rounded text-xs font-mono text-red-700 dark:text-red-400 border border-red-500/10">
+                                                                {`> Error: ${job.error}`}
+                                                            </div>
+                                                        )
+                                                    }
                                                 </div>
-                                                <span className="text-[10px] text-muted-foreground font-mono">
-                                                    {new Date(job.timestamp).toLocaleTimeString()}
-                                                </span>
-                                            </div>
-
-                                            <div className="flex items-center justify-between">
-                                                {getStatusBadge(job.status)}
-
-                                                <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[100px]">
-                                                    ID: {job.id}
-                                                </span>
-                                            </div>
-
-                                            {/* Result Area */}
-                                            {job.status === 'success' && job.response && (
-                                                <div className="mt-3 p-2 bg-green-500/5 rounded text-xs font-mono text-green-700 dark:text-green-400 border border-green-500/10">
-                                                    {`> Response: ${JSON.stringify(job.response.echo)}`}
-                                                </div>
-                                            )}
-
-                                            {job.status === 'error' && (
-                                                <div className="mt-3 p-2 bg-red-500/5 rounded text-xs font-mono text-red-700 dark:text-red-400 border border-red-500/10">
-                                                    {`> Error: ${job.error}`}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                    <div ref={scrollRef} />
-                                </div>
-                            )}
+                                            ))
+                                        }
+                                        <div ref={scrollRef} />
+                                    </div>
+                                )
+                            }
                         </ScrollArea>
                     </CardContent>
                 </Card>

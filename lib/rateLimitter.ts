@@ -7,7 +7,7 @@ export function checkRateLimit(identifier: string, limit: number = 5): boolean {
     const requests = requestStore.get(identifier) || [];
     const recentRequests = requests.filter(time => current - time < window);
 
-    if(recentRequests.length > limit) {
+    if(recentRequests.length >= limit) {
         return false;
     }
 
