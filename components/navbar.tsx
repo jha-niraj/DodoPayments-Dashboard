@@ -137,14 +137,15 @@ const Navbar = () => {
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+                        <div className="hidden sm:flex">
                         <ThemeToggle />
+                        </div>
                         <Button
                             onClick={() => setIsMoveMoneyOpen(true)}
                             className="bg-blue-800 cursor-pointer text-white hover:bg-blue/90 transition-colors shadow-lg shadow-blue-900/20"
                             size="lg"
                         >
-                            <span className="hidden md:inline mr-2">Move Money</span>
-                            <span className="md:hidden mr-2">Pay</span>
+                            <span className="hidden sm:inline mr-2">Move Money</span>
                             <MoveUpRight className="w-4 h-4" />
                         </Button>
                         <Button
@@ -152,8 +153,7 @@ const Navbar = () => {
                             className="bg-blue-800 cursor-pointer text-white hover:bg-blue/90 transition-colors shadow-lg shadow-blue-900/20"
                             size="lg"
                         >
-                            <span className="hidden md:inline mr-2">Queue Demo</span>
-                            <span className="md:hidden mr-2">Demo</span>
+                            <span className="hidden sm:inline mr-2">Queue Demo</span>
                             <Radio className="w-4 h-4" />
                         </Button>
                     </div>
