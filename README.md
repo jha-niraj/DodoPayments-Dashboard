@@ -58,7 +58,7 @@ Follow these steps to set up the project locally.
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/jha-niraj/DodoPayments-Dashboard
    cd dodopaymentdashboard
    ```
 
