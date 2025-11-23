@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import {
     Search, Bell, MoveUpRight, Loader2, CheckCircle2, File, LayoutTemplate,
-    Palette, Folder, Settings, CreditCard, Radio
+    Palette, Folder, Settings, CreditCard, Radio,
+    Server
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "./sidebar-context";
@@ -26,6 +27,21 @@ import { ThemeToggle } from "./ui/themetoggle";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+const COMMAND_PAGES = [
+    { icon: File, label: "Docs" },
+    { icon: LayoutTemplate, label: "My Cards" },
+    { icon: LayoutTemplate, label: "Transactions" },
+    { icon: Settings, label: "Payments" },
+    { icon: Folder, label: "Exchange" },
+    { icon: Palette, label: "Themes" },
+    { icon: Palette, label: "Supports" },
+];
+
+const COMMAND_SETTINGS = [
+    { icon: Settings, label: "Profile" },
+    { icon: CreditCard, label: "Billing" },
+];
+
 const Navbar = () => {
     const { isCollapsed } = useSidebar();
     const router = useRouter();
@@ -36,6 +52,7 @@ const Navbar = () => {
     const [mmStatus, setMmStatus] = useState<"idle" | "processing" | "success">("idle");
     const [mmFormData, setMmFormData] = useState({ amount: "", message: "" });
     const [mmResult, setMmResult] = useState("");
+    const [mmRemainingRequests, setMmRemainingRequests] = useState<number>(5);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -67,10 +84,33 @@ const Navbar = () => {
             if (response.data.status === "ok") {
                 setMmResult(response.data.echo);
                 setMmStatus("success");
+
+                const remaining = parseInt(response.headers['x-ratelimit-remaining'] || '5');
+                setMmRemainingRequests(remaining);
+
+                if (remaining <= 2 && remaining > 0) {
+                    toast.warning(`⚠️ Only ${remaining} request${remaining === 1 ? '' : 's'} remaining!`);
+                }
             }
-        } catch (error) {
+        } catch (error: any) {
             setMmStatus("idle");
+
+            if (error.response?.status === 429) {
+                setMmRemainingRequests(0);
+                toast.error("Rate limit exceeded! Please wait 60 seconds before trying again.", {
+                    duration: 5000
+                });
+            } else {
+                toast.error(error.response?.data?.echo || "Transaction failed. Please try again.");
+            }
         }
+    };
+
+    const handleCommandSelect = (label: string) => {
+        setIsSearchOpen(false);
+        toast.info(`"${label}" will be available soon!`, {
+            duration: 3000
+        });
     };
 
     const resetMoveMoney = () => {
@@ -137,7 +177,7 @@ const Navbar = () => {
                             </DropdownMenuContent>
                         </DropdownMenu>
                         <div className="hidden sm:flex">
-                        <ThemeToggle />
+                            <ThemeToggle />
                         </div>
                         <Button
                             onClick={() => setIsMoveMoneyOpen(true)}
@@ -162,46 +202,37 @@ const Navbar = () => {
                 <CommandInput placeholder="Search documentation..." />
                 <CommandList>
                     <CommandEmpty>No results found.</CommandEmpty>
+
                     <CommandGroup heading="Pages">
-                        <CommandItem>
-                            <File className="mr-2 h-4 w-4" />
-                            <span>Docs</span>
-                        </CommandItem>
-                        <CommandItem>
-                            <LayoutTemplate className="mr-2 h-4 w-4" />
-                            <span>My Cards</span>
-                        </CommandItem>
-                        <CommandItem>
-                            <LayoutTemplate className="mr-2 h-4 w-4" />
-                            <span>Transactions</span>
-                        </CommandItem>
-                        <CommandItem>
-                            <Settings className="mr-2 h-4 w-4" />
-                            <span>Payments</span>
-                        </CommandItem>
-                        <CommandItem>
-                            <Folder className="mr-2 h-4 w-4" />
-                            <span>Exchange</span>
-                        </CommandItem>
-                        <CommandItem>
-                            <Palette className="mr-2 h-4 w-4" />
-                            <span>Themes</span>
-                        </CommandItem>
-                        <CommandItem>
-                            <Palette className="mr-2 h-4 w-4" />
-                            <span>Supports</span>
-                        </CommandItem>
+                        {
+                            COMMAND_PAGES.map((item) => (
+                                <CommandItem
+                                    key={item.label}
+                                    onSelect={() => handleCommandSelect(item.label)}
+                                    className="cursor-pointer"
+                                >
+                                    <item.icon className="mr-2 h-4 w-4" />
+                                    <span>{item.label}</span>
+                                </CommandItem>
+                            ))
+                        }
                     </CommandGroup>
+
                     <CommandSeparator />
+
                     <CommandGroup heading="Settings">
-                        <CommandItem>
-                            <Settings className="mr-2 h-4 w-4" />
-                            <span>Profile</span>
-                        </CommandItem>
-                        <CommandItem>
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            <span>Billing</span>
-                        </CommandItem>
+                        {
+                            COMMAND_SETTINGS.map((item) => (
+                                <CommandItem
+                                    key={item.label}
+                                    onSelect={() => handleCommandSelect(item.label)}
+                                    className="cursor-pointer"
+                                >
+                                    <item.icon className="mr-2 h-4 w-4" />
+                                    <span>{item.label}</span>
+                                </CommandItem>
+                            ))
+                        }
                     </CommandGroup>
                 </CommandList>
             </CommandDialog>
@@ -284,10 +315,33 @@ const Navbar = () => {
                                         </p>
                                     </div>
                                 </div>
+                                <div className={cn(
+                                    "w-full p-4 rounded-lg border",
+                                    mmRemainingRequests === 0
+                                        ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900"
+                                        : mmRemainingRequests <= 2
+                                            ? "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-900"
+                                            : "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900"
+                                )}>
+                                    <div className="flex items-center justify-center gap-2 mb-2">
+                                        <Server className="h-4 w-4" />
+                                        <span className="text-sm font-semibold">Requests Remaining</span>
+                                    </div>
+                                    <div className="text-3xl font-bold">
+                                        {mmRemainingRequests} / 5
+                                    </div>
+                                    {
+                                        mmRemainingRequests === 0 && (
+                                            <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+                                                Rate limit reached. Wait 60 seconds to continue.
+                                            </p>
+                                        )
+                                    }
+                                </div>
                                 <Button
                                     onClick={resetMoveMoney}
                                     variant="outline"
-                                    className="mt-4 min-w-[150px]"
+                                    className="cursor-pointer mt-4 min-w-[150px]"
                                 >
                                     Done
                                 </Button>
