@@ -18,6 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import axios from 'axios';
+import { motion } from "framer-motion"
 
 type QueueJob = {
     id: string;
@@ -180,6 +181,20 @@ export default function QueueDemoPage() {
     const [timeUntilReset, setTimeUntilReset] = useState<number | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    const fadeInUp = {
+        initial: { opacity: 0, y: 20 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.4 }
+    };
+
+    const staggerContainer = {
+        animate: {
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
     useEffect(() => {
         const unsubscribe = apiQueue.subscribe(() => {
             forceUpdate({});
@@ -251,7 +266,12 @@ export default function QueueDemoPage() {
     };
 
     return (
-        <div className="p-4 py-12 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+        <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            className="p-4 py-12 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500"
+        >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Queue Management</h1>
@@ -443,7 +463,7 @@ export default function QueueDemoPage() {
                         <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         <AlertTitle className="text-blue-800 dark:text-blue-300">How it works</AlertTitle>
                         <AlertDescription className="text-blue-700 dark:text-blue-400 mt-2 text-xs leading-relaxed">
-                            Jobs are processed FIFO. Each job takes ~2s. The API enforces a rate limit of 5 requests per minute. 
+                            Jobs are processed FIFO. Each job takes ~2s. The API enforces a rate limit of 5 requests per minute.
                             When exceeded, requests are automatically queued and retried after the cooldown period.
                         </AlertDescription>
                     </Alert>
@@ -538,6 +558,6 @@ export default function QueueDemoPage() {
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </motion.div>
     );
 }

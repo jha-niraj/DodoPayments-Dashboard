@@ -1,4 +1,13 @@
-# DodoPayments Dashboard & Queue System
+# 💳 DodoPayments Dashboard & Queue System
+
+> A modern, production-grade financial dashboard with intelligent API queue management
+
+[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://dodo.nirajjha.xyz/)
+[![GitHub](https://img.shields.io/badge/github-repository-blue)](https://github.com/jha-niraj/DodoPayments-Dashboard)
+
+[View Live Demo →](https://dodo.nirajjha.xyz/) | [Queue Management →](https://dodo.nirajjha.xyz/queuedemo)
+
+---
 
 ## Overview
 
