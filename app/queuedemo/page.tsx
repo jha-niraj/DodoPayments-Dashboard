@@ -456,8 +456,8 @@ export default function QueueDemoPage() {
                         <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         <AlertTitle className="text-blue-800 dark:text-blue-300">How it works</AlertTitle>
                         <AlertDescription className="text-blue-700 dark:text-blue-400 mt-2 text-xs leading-relaxed">
-                            Jobs are processed FIFO. Each job takes ~2s. There is a 20% probability of
-                            hitting a simulated rate-limit, which pauses the worker for 3s before retrying.
+                            Jobs are processed FIFO. Each job takes ~2s. The API enforces a rate limit of 5 requests per minute. 
+                            When exceeded, requests are automatically queued and retried after the cooldown period.
                         </AlertDescription>
                     </Alert>
                 </div>

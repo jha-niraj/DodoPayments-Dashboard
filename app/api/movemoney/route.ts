@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
     }
 
     const identifier = req.headers.get("x-forwarded-for") || "anonymous";
-    console.log(identifier);
 
     if (!checkRateLimit(identifier, RATE_LIMIT)) {
         return NextResponse.json({
