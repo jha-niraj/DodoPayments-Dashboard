@@ -69,7 +69,6 @@ const Navbar = () => {
                 setMmStatus("success");
             }
         } catch (error) {
-            console.error("Transaction failed", error);
             setMmStatus("idle");
         }
     };

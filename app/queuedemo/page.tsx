@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { toast } from 'sonner';
 import axios from 'axios';
 
 type QueueJob = {
@@ -79,26 +78,19 @@ class APIQueue {
 
                 const data = response.data;
 
-                // ✅ Extract rate limit info from headers
                 const rateLimitRemaining = response.headers['x-ratelimit-remaining'];
                 if (rateLimitRemaining !== undefined) {
                     this.currentRateLimitRemaining = parseInt(rateLimitRemaining);
                     job.rateLimitRemaining = this.currentRateLimitRemaining;
 
-                    // Set reset time to 1 minute from now if we just made a request
                     if (this.rateLimitResetTime === null) {
                         this.rateLimitResetTime = Date.now() + 60000;
                     }
                 }
 
-                console.log('Rate limit remaining:', this.currentRateLimitRemaining);
-
-
-                // ✅ Check the response data status
                 if (data.status === "ok") {
                     job.status = 'success';
                     job.response = data;
-                    console.log('Job succeeded:', data);
                 } else {
                     job.status = 'error';
                     job.response = data;
@@ -108,11 +100,9 @@ class APIQueue {
                 this.notifyListeners();
             } catch (error: any) {
                 if (error.response?.status === 429) {
-                    console.log('Rate limited! Putting job back in queue...');
 
-                    // ✅ Set rate limit to 0 when we hit the limit
                     this.currentRateLimitRemaining = 0;
-                    this.rateLimitResetTime = Date.now() + 60000; // Reset in 60 seconds
+                    this.rateLimitResetTime = Date.now() + 60000;
 
                     job.status = 'pending';
                     this.notifyListeners();
@@ -120,10 +110,8 @@ class APIQueue {
                     continue;
                 }
 
-                // Other errors
                 job.status = 'error';
                 job.error = error.response?.data?.echo || error.message || 'Unknown error';
-                console.error('Job failed:', error);
 
                 this.notifyListeners();
             }
@@ -142,7 +130,6 @@ class APIQueue {
     }
 
     private notifyListeners() {
-        console.log('Notifying listeners, queue state:', this.queue.map(j => ({ id: j.id.slice(0, 8), status: j.status })));
         this.listeners.forEach(listener => listener());
     }
 
